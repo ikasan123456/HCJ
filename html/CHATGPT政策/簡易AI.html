@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>簡易AIチャットボット</title>
+    <style>
+        #chatbox {
+            width: 300px;
+            height: 400px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            overflow-y: scroll;
+        }
+        #userInput {
+            width: 100%;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>AIチャットボット</h1>
+    <div id="chatbox"></div>
+    <input type="text" id="userInput" placeholder="メッセージを入力してください..." onkeypress="checkEnter(event)">
+    <button onclick="sendMessage()">送信</button>
+
+    <script>
+        var chatbox = document.getElementById('chatbox');
+        
+        function addMessage(message, sender) {
+            var messageElement = document.createElement('div');
+            messageElement.textContent = sender + ": " + message;
+            chatbox.appendChild(messageElement);
+            chatbox.scrollTop = chatbox.scrollHeight;
+        }
+
+        function checkEnter(event) {
+            if (event.key === "Enter") {
+                sendMessage();
+            }
+        }
+
+        function sendMessage() {
+            var userInput = document.getElementById('userInput');
+            var userMessage = userInput.value;
+            if (userMessage.trim() !== "") {
+                addMessage(userMessage, "ユーザー");
+                userInput.value = "";
+                getBotResponse(userMessage);
+            }
+        }
+
+        function getBotResponse(userMessage) {
+            var botMessage = "私は簡易AIです。あなたは「" + userMessage + "」と言いました。";
+            addMessage(botMessage, "ボット");
+        }
+    </script>
+</body>
+</html>

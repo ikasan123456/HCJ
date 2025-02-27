@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>警告ポップアップドッキリ</title>
+    <style>
+        body {
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background-color: black;
+            color: white;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .popup {
+            position: absolute;
+            width: 300px;
+            height: 150px;
+            background-color: #333;
+            border: 2px solid red;
+            box-shadow: 0 0 10px red;
+            color: white;
+            font-size: 16px;
+            padding: 20px;
+            text-align: center;
+            z-index: 10;
+            animation: popupAnimation 2s infinite;
+        }
+
+        @keyframes popupAnimation {
+            0% { transform: translate(0, 0); opacity: 1; }
+            50% { transform: translate(10px, 10px); opacity: 0.8; }
+            100% { transform: translate(0, 0); opacity: 1; }
+        }
+
+        .popup button {
+            background-color: red;
+            color: white;
+            font-size: 14px;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .popup button:hover {
+            background-color: darkred;
+        }
+    </style>
+</head>
+<body>
+
+    <script>
+        let popupCount = 0; // 現在表示されているポップアップの数
+        let maxPopups = 50; // 最大表示ポップアップ数
+
+        // ランダムな位置に警告ポップアップを表示
+        function createPopup() {
+            if (popupCount >= maxPopups) return; // 最大20個まで表示
+
+            // ポップアップ要素を作成
+            const popup = document.createElement("div");
+            popup.className = "popup";
+            popup.style.top = `${Math.random() * 80}%`;
+            popup.style.left = `${Math.random() * 80}%`;
+
+            // ポップアップ内の内容
+            const title = document.createElement("div");
+            title.textContent = "警告: システムエラー!";
+            popup.appendChild(title);
+
+            const message = document.createElement("div");
+            message.textContent = "重大なエラーが発生しました。修復してください。";
+            popup.appendChild(message);
+
+            // 閉じるボタン
+            const closeButton = document.createElement("button");
+            closeButton.textContent = "閉じる";
+            closeButton.onclick = () => {
+                popup.remove(); // ポップアップを削除
+                popupCount--; // 表示中のポップアップ数を減らす
+            };
+            popup.appendChild(closeButton);
+
+            // ポップアップを画面に追加
+            document.body.appendChild(popup);
+
+            popupCount++; // 表示中のポップアップ数を増やす
+        }
+
+        // 一定間隔でランダムにポップアップを表示
+        setInterval(createPopup, 100); // 1秒ごとにポップアップを表示
+
+    </script>
+
+</body>
+</html>

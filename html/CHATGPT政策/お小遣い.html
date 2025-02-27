@@ -1,0 +1,193 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>お小遣い帳（JSON対応）</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        table { width: 100%; max-width: 500px; margin: auto; border-collapse: collapse; }
+        th, td { padding: 10px; border: 1px solid black; }
+        .negative { color: red; }
+        .positive { color: green; }
+        .total { font-size: 20px; font-weight: bold; margin-top: 10px; }
+        #history-container { 
+            max-height: 300px;
+            overflow-y: auto;
+            display: block;
+            margin: auto;
+            width: 100%;
+            max-width: 500px;
+        }
+        #usdAmount { float: left; }
+    </style>
+</head>
+<body>
+    <h1>お小遣い帳（JSON対応）</h1>
+
+    <input type="text" id="item" placeholder="項目">
+    <input type="number" id="amount" placeholder="金額">
+    <input type="datetime-local" id="dateTime">
+
+    <label>
+        <input type="checkbox" id="autoDateTime" checked> 日付・時間を自動入力
+    </label>
+    
+    <label>
+        <input type="radio" name="type" value="income" checked> 収入
+    </label>
+    <label>
+        <input type="radio" name="type" value="expense"> 支出
+    </label>
+
+    <button onclick="addTransaction()">追加</button>
+    <button onclick="clearTransactions()">リセット</button>
+
+    <h2>
+        <span id="usdAmount"></span>
+        💰 合計所有金額: <span id="totalAmount">0</span>円
+    </h2>
+    <h3>📈 収入合計: <span id="totalIncome">0</span>円 | 📉 支出合計: <span id="totalExpense">0</span>円</h3>
+
+    <div id="history-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>日付・時間</th>
+                    <th>項目</th>
+                    <th>金額</th>
+                    <th>削除</th>
+                </tr>
+            </thead>
+            <tbody id="history"></tbody>
+        </table>
+    </div>
+    
+    <script>
+        let transactions = JSON.parse(localStorage.getItem("transactions")) || [];
+        const MAX_AMOUNT = 9999_0000_0000_0000; // 9999兆円
+
+        function getCurrentDateTime() {
+            let now = new Date();
+            let year = now.getFullYear();
+            let month = String(now.getMonth() + 1).padStart(2, "0");
+            let day = String(now.getDate()).padStart(2, "0");
+            let hours = String(now.getHours()).padStart(2, "0");
+            let minutes = String(now.getMinutes()).padStart(2, "0");
+            return `${year}-${month}-${day}T${hours}:${minutes}`;
+        }
+
+        function addTransaction() {
+            let item = document.getElementById("item").value;
+            let amount = parseInt(document.getElementById("amount").value);
+            let autoDateTime = document.getElementById("autoDateTime").checked;
+            let dateTime = autoDateTime ? getCurrentDateTime() : document.getElementById("dateTime").value;
+            let type = document.querySelector('input[name="type"]:checked').value;
+
+            if (!item || isNaN(amount)) return;
+
+            if (Math.abs(amount) > MAX_AMOUNT) {
+                alert("9999兆円を超える金額は入力できません！");
+                return;
+            }
+
+            if (type === "expense") amount = -Math.abs(amount); // 支出はマイナス
+
+            let transaction = { id: Date.now(), item, amount, dateTime };
+            transactions.unshift(transaction);
+            saveToLocalStorage();
+            displayTransactions();
+        }
+
+        function saveToLocalStorage() {
+            localStorage.setItem("transactions", JSON.stringify(transactions));
+        }
+
+        function formatNumber(num) {
+            if (num >= 1_0000_0000_0000) {
+                return (num / 1_0000_0000_0000).toFixed(2) + "兆";
+            } else if (num >= 1_0000_0000) {
+                return (num / 1_0000_0000).toFixed(2) + "億";
+            } else if (num >= 1_0000) {
+                return (num / 1_0000).toFixed(2) + "万";
+            }
+            return num.toString();
+        }
+
+        function displayTransactions() {
+            let history = document.getElementById("history");
+            history.innerHTML = "";
+            let total = 0;
+            let totalIncome = 0;
+            let totalExpense = 0;
+
+            transactions.forEach((t, index) => {
+                let row = document.createElement("tr");
+                let dateCell = document.createElement("td");
+                let itemCell = document.createElement("td");
+                let amountCell = document.createElement("td");
+                let deleteCell = document.createElement("td");
+
+                dateCell.textContent = t.dateTime.replace("T", " ");
+                itemCell.textContent = t.item;
+                amountCell.textContent = formatNumber(t.amount) + "円";
+
+                if (t.amount < 0) {
+                    amountCell.classList.add("negative");
+                    totalExpense += Math.abs(t.amount);
+                } else {
+                    amountCell.classList.add("positive");
+                    totalIncome += t.amount;
+                }
+
+                let deleteBtn = document.createElement("button");
+                deleteBtn.textContent = "❌";
+                deleteBtn.onclick = () => deleteTransaction(index);
+                deleteCell.appendChild(deleteBtn);
+
+                row.appendChild(dateCell);
+                row.appendChild(itemCell);
+                row.appendChild(amountCell);
+                row.appendChild(deleteCell);
+                history.appendChild(row);
+
+                total += t.amount;
+            });
+
+            document.getElementById("totalAmount").textContent = formatNumber(total);
+            document.getElementById("totalAmount").classList.toggle("negative", total < 0);
+            document.getElementById("totalIncome").textContent = formatNumber(totalIncome);
+            document.getElementById("totalExpense").textContent = formatNumber(totalExpense);
+
+            updateUSD(total);
+        }
+
+        function deleteTransaction(index) {
+            transactions.splice(index, 1);
+            saveToLocalStorage();
+            displayTransactions();
+        }
+
+        function clearTransactions() {
+            transactions = [];
+            saveToLocalStorage();
+            displayTransactions();
+        }
+
+        async function updateUSD(totalJPY) {
+            const usdAmountElement = document.getElementById("usdAmount");
+            try {
+                const response = await fetch('https://api.exchangerate-api.com/v4/latest/JPY');
+                const data = await response.json();
+                const rate = data.rates.USD;
+                const totalUSD = (totalJPY * rate).toFixed(2);
+                usdAmountElement.textContent = `💵 合計金額（USD換算）: $${totalUSD}`;
+            } catch (error) {
+                usdAmountElement.textContent = '為替レートの取得に失敗しました。';
+            }
+        }
+
+        displayTransactions();
+    </script>
+</body>
+</html>

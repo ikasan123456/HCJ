@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>破道の九十・黒棺</title>
+    <style>
+        body {
+            text-align: center;
+            font-family: Arial, sans-serif;
+            background-color: #1a0033;
+            color: white;
+            transition: background 2s, color 2s;
+            overflow: hidden;
+            position: relative;
+        }
+        textarea {
+            width: 80%;
+            height: 150px;
+            font-size: 16px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            border: 1px solid white;
+        }
+        button {
+            margin-top: 10px;
+            padding: 10px 20px;
+            font-size: 18px;
+            cursor: pointer;
+            background: purple;
+            color: white;
+            border: none;
+        }
+        .black-coffin {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            width: 10px;
+            height: 10px;
+            background: black;
+            transform: translate(-50%, -50%);
+            transition: width 5s, height 5s;
+            z-index: 1000;
+        }
+        .lightning {
+            position: fixed;
+            top: 0;
+            left: 50%;
+            width: 4px;
+            height: 100vh;
+            background: white;
+            opacity: 0;
+            transform: translateX(-50%);
+            animation: lightning-flash 0.2s infinite;
+        }
+        @keyframes lightning-flash {
+            0%, 100% { opacity: 0; }
+            50% { opacity: 1; }
+        }
+        .distortion {
+            animation: distort 6s infinite alternate;
+        }
+        @keyframes distort {
+            0% { filter: blur(0px) brightness(1); }
+            100% { filter: blur(10px) brightness(0.2); }
+        }
+        .shadow-effect {
+            position: fixed;
+            width: 200vw;
+            height: 200vh;
+            background: radial-gradient(circle, rgba(80, 0, 150, 0) 10%, rgba(0, 0, 0, 1) 70%);
+            top: -50%;
+            left: -50%;
+            opacity: 0;
+            animation: shadow-expand 6s forwards;
+            z-index: 999;
+        }
+        @keyframes shadow-expand {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>破道の九十・黒棺</h1>
+    <p>完全に詠唱せよ。黒棺が開かれる。</p>
+    <textarea id="chant" placeholder="ここに詠唱を入力"></textarea><br>
+    <button onclick="checkChant()">唱える</button>
+    <p id="result"></p>
+
+    <div id="coffin" class="black-coffin" style="display: none;"></div>
+    <div id="shadow" class="shadow-effect" style="display: none;"></div>
+    <div id="lightning" class="lightning" style="display: none;"></div>
+
+    <script>
+        const correctChant = "滲み出す混濁の紋章、不遜なる狂気の器、湧き上がり・否定し・痺れ・瞬き・眠りを妨げる 爬行する鉄の王女 絶えず自壊する泥の人形 結合せよ 反発せよ 地に満ち己の無力を知れ 破道の九十・黒棺";
+
+        function checkChant() {
+            let userChant = document.getElementById("chant").value;
+            let result = document.getElementById("result");
+            let coffin = document.getElementById("coffin");
+            let shadow = document.getElementById("shadow");
+            let lightning = document.getElementById("lightning");
+
+            if (userChant === correctChant) {
+                result.innerHTML = "黒棺発動…";
+                coffin.style.display = "block";
+                shadow.style.display = "block";
+                lightning.style.display = "block";
+
+                // 闇の拡張
+                setTimeout(() => {
+                    coffin.style.width = "300vw";
+                    coffin.style.height = "300vh";
+                    document.body.classList.add("distortion");
+                }, 500);
+
+                // 闇の広がり（背景変化）
+                setTimeout(() => {
+                    document.body.style.backgroundColor = "darkpurple";
+                }, 1000);
+
+                // 雷のエフェクト開始
+                setTimeout(() => {
+                    lightning.style.opacity = "1";
+                }, 2000);
+
+                // 闇がすべてを包み込む
+                setTimeout(() => {
+                    shadow.style.opacity = "1";
+                }, 3000);
+
+                // 画面崩壊
+                setTimeout(() => {
+                    document.body.innerHTML = "<h1>……すべてが異次元の闇に呑まれた。</h1>";
+                }, 7000);
+            } else {
+                result.innerHTML = "詠唱が不完全だ。";
+            }
+        }
+    </script>
+
+</body>
+</html>

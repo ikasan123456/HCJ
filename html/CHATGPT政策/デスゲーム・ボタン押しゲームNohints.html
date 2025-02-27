@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>デスゲーム</title>
+    <style>
+        body {
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background-color: black;
+            color: white;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        h1 {
+            color: red;
+        }
+
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 100px);
+            grid-template-rows: repeat(4, 100px);
+            gap: 10px;
+            justify-content: center;
+            margin-top: 50px;
+        }
+
+        .button-grid button {
+            width: 100px;
+            height: 100px;
+            font-size: 18px;
+            background-color: gray;
+            border: 2px solid white;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.3s;
+        }
+
+        .button-grid button:hover {
+            background-color: #444;
+        }
+
+        .popup {
+            position: absolute;
+            width: 400px;
+            height: 200px;
+            background-color: #1a001a;
+            border: 5px solid red;
+            box-shadow: 0 0 30px red;
+            color: white;
+            font-size: 20px;
+            padding: 30px;
+            text-align: center;
+            z-index: 10;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation: flashPopup 0.5s infinite;
+        }
+
+        .happy-message {
+            color: lime;
+            font-size: 60px;
+            text-shadow: 0 0 20px lime, 0 0 30px lime, 0 0 40px lime;
+            animation: explosion 2s ease-out, popText 1.5s ease-out;
+        }
+
+        .restart-button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 18px;
+            background-color: lime;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .restart-button:hover {
+            background-color: green;
+        }
+
+        @keyframes explosion {
+            0% {
+                transform: scale(1);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.5);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        @keyframes popText {
+            0% {
+                transform: translateY(0);
+                opacity: 0;
+            }
+            50% {
+                transform: translateY(-30px);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes flashPopup {
+            0% {
+                opacity: 0.8;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0.8;
+            }
+        }
+
+        @keyframes flashBackground {
+            0% {
+                background-color: black;
+            }
+            50% {
+                background-color: red;
+            }
+            100% {
+                background-color: black;
+            }
+        }
+
+        @keyframes shake {
+            0% {
+                transform: translateX(0);
+            }
+            25% {
+                transform: translateX(-10px);
+            }
+            50% {
+                transform: translateX(10px);
+            }
+            75% {
+                transform: translateX(-10px);
+            }
+            100% {
+                transform: translateX(0);
+            }
+        }
+
+    </style>
+</head>
+<body>
+
+<h1>デスゲームを開始します</h1>
+<p id="gameMessage">ボタンを押してください。爆弾ボタンを押すとエラーが発生します。</p>
+
+<div class="button-grid" id="buttonGrid"></div>
+
+<script>
+    let bombButtonIndex = Math.floor(Math.random() * 16); 
+    let buttonCount = 0;
+    let totalButtons = 16; 
+
+    let debug = 0; 
+
+    function createButtons() {
+        const grid = document.getElementById("buttonGrid");
+
+        for (let i = 0; i < totalButtons; i++) {
+            const button = document.createElement("button");
+            button.textContent = i + 1;
+
+            if (debug === 1) {
+                if (i === bombButtonIndex) {
+                    button.style.backgroundColor = "blue"; 
+                    button.textContent = "爆弾";
+                }
+            }
+
+            button.onclick = function() {
+                if (i === bombButtonIndex) {
+                    showError();
+                } else {
+                    button.style.backgroundColor = "green"; 
+                    setTimeout(() => {
+                        button.style.visibility = "hidden"; 
+                    }, 1000);
+                    buttonCount++;
+
+                    if (buttonCount === 15) {
+                        showHappyMessage();
+                    }
+                }
+            };
+
+            grid.appendChild(button);
+        }
+    }
+
+    function showError() {
+        const buttons = document.querySelectorAll('.button-grid button');
+        buttons.forEach(button => {
+            button.disabled = true;
+        });
+
+        const bombButton = buttons[bombButtonIndex];
+        bombButton.style.backgroundColor = "red";
+        bombButton.style.transform = "scale(1.5)"; 
+
+        document.body.style.animation = "flashBackground 0.5s infinite";
+
+        buttons.forEach(button => {
+            button.style.animation = "shake 0.5s infinite";
+        });
+
+        setTimeout(() => {
+            bombButton.style.animation = "explode 1s forwards"; 
+
+            buttons.forEach(button => {
+                button.disabled = true;
+            });
+
+            setTimeout(() => {
+                document.body.innerHTML = `
+                    <div class="popup">
+                        <h2>エラー</h2>
+                        <p>システムエラー: 致命的な障害が発生しました。</p>
+                        <p>エラーコード: 0xC0000218</p>
+                        <p>コンピュータが予期せずシャットダウンします。</p>
+                        <button class="restart-button" onclick="restartGame()">再起動</button>
+                    </div>
+                `;
+            }, 1500); 
+        }, 1000);
+    }
+
+    function showHappyMessage() {
+        document.body.innerHTML = `
+            <div class="happy-message">
+                <h2>ウワオ！！！！</h2>
+                <p>すごい！すごすぎる！！</p>
+                <p>あなたはデスゲームをクリアした！！</p>
+                <p>ウエェェェェェェエエエエエエイ！！！！</p>
+                <p>君は本当に素晴らしい！！</p>
+            </div>
+            <button class="restart-button" onclick="restartGame()">もう一度挑戦する</button>
+        `;
+    }
+
+    function restartGame() {
+        location.reload();
+    }
+
+    createButtons();
+</script>
+
+</body>
+</html>
+
+<!--debugあり->

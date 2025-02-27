@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minesweeper</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: Arial, sans-serif;
+        }
+
+        #board {
+            display: grid;
+            grid-template-columns: repeat(10, 30px);
+            grid-gap: 5px;
+            margin-top: 20px;
+        }
+
+        .cell {
+            width: 30px;
+            height: 30px;
+            background-color: #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .cell.revealed {
+            background-color: #e0e0e0;
+        }
+
+        .cell.mine {
+            background-color: red;
+        }
+
+        .cell.flagged {
+            background-color: yellow;
+        }
+    </style>
+</head>
+<body>
+    <h1>Minesweeper</h1>
+    <div id="board"></div>
+    <script>
+        const board = document.getElementById('board');
+        const width = 10;
+        const height = 10;
+        const minesCount = 10;
+        const cells = [];
+
+        function createBoard() {
+            const minePositions = generateMines();
+
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const cell = document.createElement('div');
+                    cell.classList.add('cell');
+                    cell.dataset.x = x;
+                    cell.dataset.y = y;
+                    cell.addEventListener('click', () => revealCell(x, y));
+                    cell.addEventListener('contextmenu', (e) => {
+                        e.preventDefault();
+                        flagCell(x, y);
+                    });
+
+                    board.appendChild(cell);
+                    cells.push({ element: cell, x, y, mine: minePositions.some(pos => pos.x === x && pos.y === y), revealed: false, flagged: false });
+                }
+            }
+        }
+
+        function generateMines() {
+            const positions = [];
+            while (positions.length < minesCount) {
+                const x = Math.floor(Math.random() * width);
+                const y = Math.floor(Math.random() * height);
+                if (!positions.some(pos => pos.x === x && pos.y === y)) {
+                    positions.push({ x, y });
+                }
+            }
+            return positions;
+        }
+
+        function revealCell(x, y) {
+            const cell = cells.find(c => c.x === x && c.y === y);
+            if (!cell || cell.revealed || cell.flagged) return;
+
+            cell.revealed = true;
+            cell.element.classList.add('revealed');
+
+            if (cell.mine) {
+                cell.element.classList.add('mine');
+                alert('Game Over');
+                return;
+            }
+
+            const adjacentMines = countAdjacentMines(x, y);
+            if (adjacentMines > 0) {
+                cell.element.textContent = adjacentMines;
+            } else {
+                for (let dx = -1; dx <= 1; dx++) {
+                    for (let dy = -1; dy <= 1; dy++) {
+                        if (dx !== 0 || dy !== 0) {
+                            revealCell(x + dx, y + dy);
+                        }
+                    }
+                }
+            }
+        }
+
+        function countAdjacentMines(x, y) {
+            let count = 0;
+            for (let dx = -1; dx <= 1; dx++) {
+                for (let dy = -1; dy <= 1; dy++) {
+                    if (dx !== 0 || dy !== 0) {
+                        const cell = cells.find(c => c.x === x + dx && c.y === y + dy);
+                        if (cell && cell.mine) {
+                            count++;
+                        }
+                    }
+                }
+            }
+            return count;
+        }
+
+        function flagCell(x, y) {
+            const cell = cells.find(c => c.x === x && c.y === y);
+            if (!cell || cell.revealed) return;
+
+            cell.flagged = !cell.flagged;
+            cell.element.classList.toggle('flagged');
+        }
+
+        createBoard();
+    </script>
+</body>
+</html>

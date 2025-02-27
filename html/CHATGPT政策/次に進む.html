@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Botブロッカー</title>
+    <style>
+        body { text-align: center; font-family: Arial, sans-serif; transition: background-color 1s ease-in-out; }
+        .grid { display: grid; grid-template-columns: repeat(3, 80px); gap: 10px; justify-content: center; }
+        .cell { width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; border: 1px solid black; font-size: 24px; cursor: pointer; }
+        .hidden { visibility: hidden; }
+        .empty { border: none; }
+        .blink { animation: blink 0.5s alternate infinite; }
+        @keyframes blink { 0% { opacity: 1; } 100% { opacity: 0; } }
+        .failure { background-color: rgb(144, 199, 209); color: white; animation: shake 1s infinite; }
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            50% { transform: translateX(10px); }
+            75% { transform: translateX(-10px); }
+            100% { transform: translateX(0); }
+        }
+        .hidden-content { display: none; }
+        .success-screen { font-size: 2em; color: green; }
+        .failure-screen {
+            background-color: red;
+            color: white;
+            padding: 50px;
+            font-size: 2em;
+            animation: shake 1s infinite, fadeIn 1s ease-out forwards;
+        }
+        @keyframes fadeIn {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+        .failure-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 0, 0, 0.9);
+            z-index: 999;
+            animation: flicker 1s infinite;
+        }
+        @keyframes flicker {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <h1>Botブロッカー</h1>
+    <h2 id="question"></h2>
+    <div class="grid" id="grid"></div>
+    <div id="success-screen" class="hidden-content">
+        <p class="success-screen">成功しました！次のステージへ...</p>
+        <button onclick="nextStage()">次へ</button>
+    </div>
+    <div id="failure-screen" class="hidden-content">
+        <p class="failure-screen">あなたはBOTデスに！</p>
+    </div>
+    <div id="failure-bg" class="hidden-content"></div>
+
+    <p id="wrong-count">間違えた回数: 0</p>
+
+    <script>
+        let wrongCount = 0;
+        let isGameOver = false;
+
+        function getRandomNumbers(count, min, max, requiredEvenCount, requiredOddCount) {
+            let numbers = [];
+            let evenCount = 0;
+            let oddCount = 0;
+            while (numbers.length < count) {
+                let num = Math.floor(Math.random() * (max - min + 1)) + min;
+                if (numbers.includes(num)) continue;
+                if (num % 2 !== 0 && oddCount < requiredOddCount) {
+                    numbers.push(num);
+                    oddCount++;
+                } else if (num % 2 === 0 && evenCount < requiredEvenCount) {
+                    numbers.push(num);
+                    evenCount++;
+                }
+            }
+            return numbers;
+        }
+
+        function startGame() {
+            if (isGameOver) return;
+
+            wrongCount = 0;
+            document.body.classList.remove('blink');
+            document.body.classList.remove('failure');
+            document.getElementById('failure-bg').classList.add('hidden-content');
+            document.getElementById('failure-screen').classList.add('hidden-content');
+            document.getElementById("wrong-count").innerText = `間違えた回数: ${wrongCount}`;
+
+            let questionType = Math.floor(Math.random() * 4);
+            let numbers = (questionType === 0) ? getRandomNumbers(9, 1, 99, 4, 5) :
+                          (questionType === 1) ? getRandomNumbers(9, 1, 99, 5, 4) :
+                          getRandomNumbers(4, 1, 99, 2, 2);
+            let correctAnswer;
+            let selected = [];
+            document.getElementById("grid").innerHTML = '';
+
+            numbers.forEach(num => {
+                let cell = document.createElement("div");
+                cell.className = "cell";
+                cell.innerText = num;
+                cell.addEventListener("click", function() {
+                    if (!cell.classList.contains("hidden") && selected.length < 4) {
+                        selected.push(Number(cell.innerText));
+                        cell.classList.add("hidden");
+                        if (selected.length === 4) { checkAnswer(selected, correctAnswer, questionType); }
+                    }
+                });
+                document.getElementById("grid").appendChild(cell);
+            });
+
+            switch (questionType) {
+                case 0:
+                    document.getElementById("question").innerText = "偶数だけを選んでください";
+                    correctAnswer = numbers.filter(n => n % 2 === 0);
+                    break;
+                case 1:
+                    document.getElementById("question").innerText = "奇数だけを選んでください";
+                    correctAnswer = numbers.filter(n => n % 2 !== 0);
+                    break;
+                case 2:
+                    document.getElementById("question").innerText = "大きい順に並び替えてください";
+                    correctAnswer = [...numbers].sort((a, b) => b - a);
+                    break;
+                case 3:
+                    document.getElementById("question").innerText = "小さい順に並び替えてください";
+                    correctAnswer = [...numbers].sort((a, b) => a - b);
+                    break;
+            }
+        }
+
+        function checkAnswer(selected, correctAnswer, questionType) {
+            let isCorrect = true;
+
+            switch (questionType) {
+                case 0:
+                case 1:
+                    isCorrect = selected.every(num => correctAnswer.includes(num));
+                    break;
+                case 2:
+                case 3:
+                    let sortedSelected = [...selected];
+                    if (questionType === 2) {
+                        sortedSelected.sort((a, b) => b - a);
+                    } else {
+                        sortedSelected.sort((a, b) => a - b);
+                    }
+                    isCorrect = JSON.stringify(sortedSelected) === JSON.stringify(correctAnswer);
+                    break;
+            }
+
+            if (isCorrect) {
+                handleSuccess();
+            } else {
+                wrongCount++;
+                document.getElementById("wrong-count").innerText = `間違えた回数: ${wrongCount}`;
+                if (wrongCount >= 3) {
+                    handleFailure();
+                } else {
+                    document.body.classList.add('failure');
+                }
+            }
+        }
+
+        function handleSuccess() {
+            document.getElementById("grid").classList.add("hidden-content");
+            document.getElementById("success-screen").classList.remove("hidden-content");
+        }
+
+        function handleFailure() {
+            document.getElementById('failure-bg').classList.remove('hidden-content');
+            document.getElementById('failure-screen').classList.remove('hidden-content');
+            if (wrongCount >= 3) {
+                setTimeout(() => {
+                    alert("あなたはBOTです!");
+                    setTimeout(startGame, 5000);
+                }, 5000);
+            }
+        }
+
+        function nextStage() {
+            isGameOver = false;
+            startGame();
+        }
+
+        startGame();
+    </script>
+</body>
+</html>
